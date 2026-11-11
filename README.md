@@ -63,3 +63,8 @@ src/color/            OKLCH, ramps, WCAG contrast, PNG previews
 src/tokens/           the design system as data (one module per collection, plus effects)
 src/sync.rs           make the document match the plan (create / update / skip)
 ```
+
+## Licence
+
+Latte is dual-licensed under either the [MIT licence](LICENSE-MIT) or the
+[Apache License, Version 2.0](LICENSE-APACHE), at your option, like FigCraft itself.
