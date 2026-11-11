@@ -1,0 +1,16 @@
+// The Latte board widget: insert, edit a hex on the canvas, generate from its menu, open the
+// panel from it and change a setting there (the board redraws), generate again from the board.
+//   figcraft-cli run e2e/board.jsonl --out /tmp/latte-board.figcraft
+{"command": "plugin.import", "params": {"path": "dist"}}
+{"command": "widget.insert", "params": {"plugin": "com.artcraft.latte", "x": 0, "y": 0}}
+{"command": "widget.setText", "params": {"id": 2, "field": "hex0", "value": "#0D99FF"}}
+{"command": "widget.setText", "params": {"id": 2, "field": "hex1", "value": "not a colour"}}
+{"command": "widget.menu", "params": {"id": 2, "item": "generate"}}
+{"command": "widget.click", "params": {"id": 2, "target": "tab.themes"}}
+{"command": "widget.click", "params": {"id": 2, "target": "edit"}}
+{"command": "plugin.event", "params": {"id": "com.artcraft.latte", "control": "role", "value": "accent/default"}}
+{"command": "plugin.event", "params": {"id": "com.artcraft.latte", "control": "light", "value": "700"}}
+{"command": "plugin.event", "params": {"id": "com.artcraft.latte", "control": "section", "value": "Typography"}}
+{"command": "plugin.close", "params": {"id": "com.artcraft.latte"}}
+{"command": "widget.click", "params": {"id": 2, "target": "generate"}}
+{"command": "widget.list", "params": {}}

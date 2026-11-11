@@ -6,14 +6,19 @@
 //! (spacing, radii, borders) and **Typography** (families, sizes, line heights, weights), plus
 //! text styles bound to Typography and effect styles. Running it again re-syncs: what's missing is
 //! made and what changed is updated in place.
+//!
+//! Two ways in: the **panel** (Plugins ▸ Latte ▸ Open Latte…) and the **Latte board** widget
+//! (Plugins ▸ Widgets ▸ Latte), a live preview on the canvas whose Edit settings button opens the
+//! same panel and redraws the board with every change.
 
 pub mod color;
 pub mod config;
 pub mod panel;
 pub mod sync;
 pub mod tokens;
+pub mod widget;
 
-use figcraft_plugin_sdk::{Event, Input, Result, Value, call, close_ui, entry, json, notify, serde_json, set_setting, setting, show_ui};
+use figcraft_plugin_sdk::{Event, Input, Result, Value, Widget, call, close_ui, entry, json, notify, render_widget, serde_json, set_setting, setting, show_ui};
 
 use config::Config;
 
@@ -37,8 +42,12 @@ fn load_config() -> Config {
         .normalized()
 }
 
+fn to_value(c: &Config) -> Result<Value> {
+    serde_json::to_value(c).map_err(|e| e.to_string())
+}
+
 fn save_setting(c: &Config) -> Result<()> {
-    set_setting(CONFIG_KEY, &serde_json::to_value(c).map_err(|e| e.to_string())?)
+    set_setting(CONFIG_KEY, &to_value(c)?)
 }
 
 /// Keep the config in the document, beside what it generated.
@@ -54,6 +63,7 @@ fn generate(c: &Config) -> Result<sync::Summary> {
     let summary = sync::apply(&mut sync::Figcraft, &tokens::plan(c))?;
     save_to_document(c)?;
     save_setting(c)?;
+    notify(&summary.text());
     Ok(summary)
 }
 
@@ -68,53 +78,128 @@ fn summary_json(s: &sync::Summary) -> Value {
     })
 }
 
-fn on_event(e: Event) -> Result<Value> {
-    let saved = setting(CONFIG_KEY).and_then(|v| serde_json::from_value::<Config>(v).ok()).map(Config::normalized);
-    let config = saved.unwrap_or_else(load_config);
+/// What a panel event leads to.
+struct Outcome {
+    config: Config,
+    /// The panel to show next (None: it was closed).
+    panel: Option<Value>,
+    section: String,
+    generated: Option<sync::Summary>,
+}
+
+/// A button or field of the panel, against `config`.
+fn panel_event(config: Config, e: &Event) -> Result<Outcome> {
     let section = e.values["section"].as_str().unwrap_or("Overview").to_string();
-    match e.control.as_str() {
-        "close" => {
-            close_ui();
-            Ok(Value::Null)
-        }
+    let show = |c: &Config, msg: Option<&str>| panel::spec(c, &section, &e.values, msg);
+    Ok(match e.control.as_str() {
+        "close" => Outcome { panel: None, config, section, generated: None },
         "generate" => {
             // Take whatever is in the fields now, in case the last edit hasn't been seen yet.
             let config = panel::merge(config, "generate", &e.values);
             let s = generate(&config)?;
-            notify(&s.text());
-            show_ui(&panel::spec(&config, &section, &e.values, Some(&s.text())))?;
-            Ok(summary_json(&s))
+            Outcome { panel: Some(show(&config, Some(&s.text()))), config, section, generated: Some(s) }
         }
         "reset" => {
             let config = panel::reset(config, &section);
-            save_setting(&config)?;
-            show_ui(&panel::spec(&config, &section, &e.values, None))?;
-            Ok(Value::Null)
+            Outcome { panel: Some(show(&config, None)), config, section, generated: None }
         }
-        "section" | "role" => {
-            show_ui(&panel::spec(&config, &section, &e.values, None))?;
-            Ok(Value::Null)
-        }
+        "section" | "role" => Outcome { panel: Some(show(&config, None)), config, section, generated: None },
         control => {
             let config = panel::merge(config, control, &e.values);
-            save_setting(&config)?;
-            show_ui(&panel::spec(&config, &section, &e.values, None))?;
-            Ok(Value::Null)
+            Outcome { panel: Some(show(&config, None)), config, section, generated: None }
+        }
+    })
+}
+
+fn show_or_close(panel: Option<&Value>) -> Result<()> {
+    match panel {
+        Some(p) => show_ui(p),
+        None => {
+            close_ui();
+            Ok(())
         }
     }
 }
 
+/// The panel opened from the menu: its working config is the user setting.
+fn on_menu_panel(e: &Event) -> Result<Value> {
+    let saved = setting(CONFIG_KEY).and_then(|v| serde_json::from_value::<Config>(v).ok()).map(Config::normalized);
+    let o = panel_event(saved.unwrap_or_else(load_config), e)?;
+    save_setting(&o.config)?;
+    show_or_close(o.panel.as_ref())?;
+    Ok(o.generated.as_ref().map_or(Value::Null, summary_json))
+}
+
+/// The board's working config: kept in its state (so edits show before they're generated and
+/// travel with the file), else the document's.
+fn board_config(state: &Value) -> Config {
+    serde_json::from_value::<Config>(state["config"].clone()).map(Config::normalized).unwrap_or_else(|_| load_config())
+}
+
+fn draw_board(config: &Config, tab: &str, last: &str) -> Result<()> {
+    render_widget(&json!({
+        "state": {"tab": tab, "config": to_value(config)?, "last": last},
+        "root": widget::render(config, tab, last),
+        "menu": widget::menu(),
+    }))
+}
+
+/// A callback of the panel the board opened: edit the board's config and redraw it.
+fn on_board_panel(w: &Widget, e: &Event) -> Result<Value> {
+    let o = panel_event(board_config(&w.state), e)?;
+    let tab = widget::tab_for(&o.section).unwrap_or_else(|| widget::tab_of(&w.state));
+    let last = o.generated.as_ref().map_or_else(|| w.state["last"].as_str().unwrap_or_default().to_string(), sync::Summary::text);
+    draw_board(&o.config, tab, &last)?;
+    show_or_close(o.panel.as_ref())?;
+    Ok(o.generated.as_ref().map_or(Value::Null, summary_json))
+}
+
+/// The board inserted, clicked, edited or given a menu item.
+fn on_board(w: &Widget) -> Result<Value> {
+    let mut config = board_config(&w.state);
+    let mut tab = widget::tab_of(&w.state).to_string();
+    let mut last = w.state["last"].as_str().unwrap_or_default().to_string();
+    let mut output = Value::Null;
+    let action = w.target.as_deref().or(w.menu.as_deref()).unwrap_or_default();
+    if let Some(t) = action.strip_prefix("tab.") {
+        tab = t.to_string();
+    } else if action == "generate" {
+        let s = generate(&config)?;
+        last = s.text();
+        output = summary_json(&s);
+    } else if action == "edit" {
+        show_ui(&panel::spec(&config, widget::section_for(&tab), &Value::Null, None))?;
+    } else if let Some(field) = &w.field {
+        // A colour's name or hex edited on the board: the same rules as the panel's Colours.
+        let mut values = json!({"section": "Colours"});
+        for (i, c) in config.colors.iter().enumerate() {
+            values[format!("name{i}")] = json!(c.name);
+            values[format!("hex{i}")] = json!(c.hex);
+        }
+        values["tint"] = json!(config.neutral_tint * 100.0);
+        values["pin"] = json!(config.pin_base);
+        let typed = w.value.as_str().unwrap_or_default().trim().to_string();
+        if field.starts_with("hex") && color::Rgb::from_hex(&typed).is_none() {
+            notify(&format!("“{typed}” isn't a hex colour (like #4F46E5)"));
+        } else {
+            values[field.as_str()] = json!(typed);
+            config = panel::merge(config, field, &values);
+        }
+    }
+    draw_board(&config, &tab, &last)?;
+    Ok(output)
+}
+
 fn run(input: Input) -> Result<Value> {
-    if let Some(e) = input.event {
-        return on_event(e);
+    match (&input.widget, &input.event) {
+        (Some(w), Some(e)) => return on_board_panel(w, e),
+        (Some(w), None) => return on_board(w),
+        (None, Some(e)) => return on_menu_panel(e),
+        (None, None) => {}
     }
     let config = load_config();
     match input.command.as_str() {
-        "generate" => {
-            let s = generate(&config)?;
-            notify(&s.text());
-            Ok(summary_json(&s))
-        }
+        "generate" => Ok(summary_json(&generate(&config)?)),
         _ => {
             // Panel edits start from the document's config.
             save_setting(&config)?;

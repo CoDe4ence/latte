@@ -15,7 +15,25 @@ Styles: 13 **text styles** (Display, Heading H1–H4, Body, Label, Caption, Code
 and line height are bound to Typography variables, and **effect styles** (Elevation 1–6, Focus
 ring, background Blurs).
 
-## Using it
+## The Latte board
+
+**Plugins ▸ Widgets ▸ Latte** puts the Latte board on the canvas: a live preview of the design
+system with tabs for Colours, Themes, Type, Spacing and Effects.
+
+![The Latte board: colour ramps](docs/board-colours.png)
+![The Latte board: Light and Dark theme previews](docs/board-themes.png)
+
+- **Generate** (on the board or in its menu) creates and re-syncs the variables and styles.
+- **Edit settings** opens the panel. Every change there redraws the board as you go.
+- Double-click a colour's name or hex on the board to change it.
+- The board keeps its working settings in its own state, so unsaved edits show up and travel
+  with the file. Generate writes them to the document.
+
+The board previews with plain colours in the board's typeface, because widget layers can't take
+fonts, effects or variables. Its elevation shadows are approximations. The generated styles are
+the real thing.
+
+## The panel
 
 **Plugins ▸ Latte ▸ Open Latte…** opens the panel. Its *Section* menu switches between:
 
@@ -51,6 +69,7 @@ Headless check with a `figcraft-cli` built from the FigCraft repository:
 ```sh
 figcraft-cli run e2e/smoke.jsonl --out /tmp/latte-smoke.figcraft
 figcraft-cli run e2e/panel.jsonl
+figcraft-cli run e2e/board.jsonl
 ```
 
 ## Layout
@@ -59,6 +78,7 @@ figcraft-cli run e2e/panel.jsonl
 src/lib.rs            entry point: commands and panel events
 src/config.rs         the choices a design system is made from
 src/panel.rs          the panel's sections, and merging its values into the config
+src/widget.rs         the Latte board widget
 src/color/            OKLCH, ramps, WCAG contrast, PNG previews
 src/tokens/           the design system as data (one module per collection, plus effects)
 src/sync.rs           make the document match the plan (create / update / skip)

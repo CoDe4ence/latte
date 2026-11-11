@@ -143,6 +143,7 @@ fn controls(c: &Config, section: &str, values: &Value, message: Option<&str>) ->
                 plan.style_count(StyleType::Effect)
             )));
             v.push(note(themes::report_text(c)));
+            v.push(note("Tip: Plugins ▸ Widgets ▸ Latte puts the Latte board on the canvas, a live preview of all of this."));
         }
     }
     if let Some(m) = message {
