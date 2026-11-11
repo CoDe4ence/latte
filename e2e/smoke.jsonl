@@ -1,0 +1,14 @@
+// Headless smoke test. Run from the Latte folder after ./build.sh:
+//   figcraft-cli run e2e/smoke.jsonl --out /tmp/latte-smoke.figcraft
+// The first generate creates everything; the second must report it all unchanged.
+{"command": "plugin.import", "params": {"path": "dist"}}
+{"command": "plugin.run", "params": {"id": "com.artcraft.latte", "command": "generate"}}
+{"command": "plugin.run", "params": {"id": "com.artcraft.latte", "command": "generate"}}
+// The panel: switch section, change the accent colour, generate (an in-place update).
+{"command": "plugin.run", "params": {"id": "com.artcraft.latte", "command": "open"}}
+{"command": "plugin.event", "params": {"id": "com.artcraft.latte", "control": "section", "value": "Colours"}}
+{"command": "plugin.event", "params": {"id": "com.artcraft.latte", "control": "hex0", "value": "#0D99FF"}}
+{"command": "plugin.event", "params": {"id": "com.artcraft.latte", "control": "generate"}}
+{"command": "plugin.close", "params": {"id": "com.artcraft.latte"}}
+{"command": "variable.list", "params": {}}
+{"command": "style.list", "params": {}}

@@ -1,0 +1,17 @@
+{
+  "id": "com.artcraft.latte",
+  "name": "Latte",
+  "version": "0.1.0",
+  "author": "ArtCraft",
+  "description": "Generate and manage a design system: colour palettes, themes, spacing, radii, typography and effects as native variables and styles.",
+  "main": "latte.wasm",
+  "api": 2,
+  "permissions": {
+    "access": "write",
+    "commands": ["variable.*", "style.*", "node.get", "node.set", "page.list"]
+  },
+  "commands": [
+    { "id": "open", "label": "Open Latte…" },
+    { "id": "generate", "label": "Generate / re-sync design system" }
+  ]
+}

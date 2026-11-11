@@ -1,0 +1,18 @@
+// Every panel section, a role edit, the Compact mode (a new mode), Generate and Reset.
+//   figcraft-cli run e2e/panel.jsonl
+{"command": "plugin.import", "params": {"path": "dist"}}
+{"command": "plugin.run", "params": {"id": "com.artcraft.latte", "command": "generate"}}
+{"command": "plugin.run", "params": {"id": "com.artcraft.latte", "command": "open"}}
+{"command": "plugin.event", "params": {"id": "com.artcraft.latte", "control": "section", "value": "Themes"}}
+{"command": "plugin.event", "params": {"id": "com.artcraft.latte", "control": "role", "value": "fg/muted"}}
+{"command": "plugin.event", "params": {"id": "com.artcraft.latte", "control": "light", "value": "300"}}
+{"command": "plugin.event", "params": {"id": "com.artcraft.latte", "control": "section", "value": "Sizes"}}
+{"command": "plugin.event", "params": {"id": "com.artcraft.latte", "control": "compact", "value": true}}
+{"command": "plugin.event", "params": {"id": "com.artcraft.latte", "control": "section", "value": "Typography"}}
+{"command": "plugin.event", "params": {"id": "com.artcraft.latte", "control": "scale", "value": "1.333 Perfect fourth"}}
+{"command": "plugin.event", "params": {"id": "com.artcraft.latte", "control": "section", "value": "Effects"}}
+{"command": "plugin.event", "params": {"id": "com.artcraft.latte", "control": "elevations", "value": 3}}
+{"command": "plugin.event", "params": {"id": "com.artcraft.latte", "control": "generate"}}
+{"command": "plugin.event", "params": {"id": "com.artcraft.latte", "control": "reset"}}
+{"command": "plugin.close", "params": {"id": "com.artcraft.latte"}}
+{"command": "plugin.run", "params": {"id": "com.artcraft.latte", "command": "generate"}}

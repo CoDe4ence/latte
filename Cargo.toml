@@ -1,0 +1,30 @@
+[package]
+name = "latte"
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+description = "Latte: design-system generation and management for FigCraft"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# Pinned to a FigCraft commit; bump `rev` to pick up newer SDK releases.
+figcraft-plugin-sdk = { git = "https://github.com/storytold/figcraft", rev = "be991533b0cc1891447d8ea48198abc87fdbc609" }
+serde = { version = "1", features = ["derive"] }
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
+
+# Small modules: a plugin is loaded on every run.
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
